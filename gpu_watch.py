@@ -90,7 +90,10 @@ def main() -> int:
     ap.add_argument("--smtp_sender", type=str, default="", help="Sender email (or env SMTP_SENDER)")
     ap.add_argument("--smtp_ssl", action="store_true", help="use SMTP SSL")
     ap.add_argument("--smtp_tls", action="store_true", help="use STARTTLS")
+    ap.add_argument("--email_once", action="store_true", help="send email only once per idle period")
     args = ap.parse_args()
+
+    email_sent_for_idle = False
 
     while True:
         try:
@@ -118,7 +121,7 @@ def main() -> int:
                 sys.stdout.flush()
             except Exception:
                 pass
-            if args.email:
+            if args.email and (not args.email_once or not email_sent_for_idle):
                 smtp_host = args.smtp_host or os.getenv("SMTP_HOST", "")
                 smtp_port = args.smtp_port or int(os.getenv("SMTP_PORT", "0") or 0)
                 smtp_user = args.smtp_user or os.getenv("SMTP_USER", "")
@@ -145,6 +148,7 @@ def main() -> int:
                             use_tls=bool(args.smtp_tls),
                         )
                         print("Email alert sent.")
+                        email_sent_for_idle = True
                     except Exception as e:
                         print(f"Email alert failed: {e}")
                 else:
@@ -152,6 +156,7 @@ def main() -> int:
             if args.once:
                 return 0
         else:
+            email_sent_for_idle = False
             if args.once:
                 return 1
 
